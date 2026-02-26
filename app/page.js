@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, PlusCircle, Heart, MessageCircle, MapPin, Sparkles, Zap, ShieldCheck, Car, Home, Laptop, Briefcase, Settings, Dog, X, ChevronDown, CheckCircle2, AlertCircle } from 'lucide-react';
+
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ყველა');
@@ -30,20 +31,32 @@ export default function Page() {
     if (!tempPrice || !tempTitle) return;
     setIsAnalyzing(true);
     
-    // Имитация работы нейросети (задержка 1.5 сек)
     setTimeout(() => {
       const price = parseFloat(tempPrice);
       let status = '';
       let color = '';
       let message = '';
 
-      // Логика оценки (примерная)
       if (tempTitle.toLowerCase().includes('iphone')) {
-        if (price < 2800) { status = 'სუპერ ფასი!'; color = 'text-green-600'; message = 'ეს ფასი ძალიან სწრაფად გაყიდის ნივთს.'; }
-        else if (price > 3500) { status = 'ძვირია'; color = 'text-red-500'; message = 'საშუალო საბაზრო ფასი არის 3200 ₾.'; }
-        else { status = 'ნორმალური ფასი'; color = 'text-blue-600'; message = 'ფასი შეესაბამება ბაზარს.'; }
+        if (price < 2800) { 
+            status = 'სუპერ ფასი!'; 
+            color = 'text-green-600'; 
+            message = 'ეს ფასი ძალიან სწრაფად გაყიდის ნივთს.'; 
+        }
+        else if (price > 3500) { 
+            status = 'ძვირია'; 
+            color = 'text-red-500'; 
+            message = 'საშუალო საბაზრო ფასი არის 3200 ₾.'; 
+        }
+        else { 
+            status = 'ნორმალური ფასი'; 
+            color = 'text-blue-600'; 
+            message = 'ფასი შეესაბამება ბაზარს.'; 
+        }
       } else {
-        status = 'გაანალიზებულია'; color = 'text-slate-600'; message = 'AI გირჩევთ ამ ფასის დატოვებას.';
+        status = 'გაანალიზებულია'; 
+        color = 'text-slate-600'; 
+        message = 'AI გირჩევთ ამ ფასის დატოვებას.';
       }
 
       setAiAnalysis({ status, color, message });
@@ -86,7 +99,6 @@ export default function Page() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* КАТЕГОРИИ (Кратко) */}
         <div className="flex gap-4 overflow-x-auto pb-8 no-scrollbar">
           {['ავტომობილები', 'უძრავი ქონება', 'ელექტრონიკა', 'ცხოველები'].map((cat) => (
             <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-3 rounded-2xl border font-bold whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-slate-900 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-blue-200'}`}>
@@ -95,7 +107,6 @@ export default function Page() {
           ))}
         </div>
 
-        {/* ТОВАРЫ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredProducts.map((p) => (
             <div key={p.id} className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden hover:shadow-xl transition-all p-4 group">
@@ -114,7 +125,6 @@ export default function Page() {
         </div>
       </main>
 
-      {/* MODAL WITH AI PRICE ASSISTANT */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] p-8 relative shadow-2xl overflow-hidden">
@@ -158,7 +168,6 @@ export default function Page() {
                 </div>
               </div>
 
-              {/* AI ВЕРДИКТ */}
               {aiAnalysis && (
                 <div className="bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 animate-in slide-in-from-top-4 duration-500">
                   <div className="flex items-start gap-4">
@@ -183,4 +192,3 @@ export default function Page() {
     </div>
   );
 }
-
