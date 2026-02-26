@@ -79,4 +79,35 @@ export default function Page() {
         
         {/* HEADER */}
         <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b dark:border-slate-800 p-4 sticky top-0 z-50">
-          <div className="
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="text-2xl font-black text-blue-600 flex items-center gap-2">
+              <ShoppingBag /> GAVITO
+            </div>
+            
+            <div className="flex-1 max-w-md hidden md:block">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="ძებნა..." 
+                  className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 ring-blue-500 transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400">
+                {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
+              </button>
+              <button 
+                onClick={() => setIsModalOpen(true)} 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-transform active:scale-95"
+              >
+                <PlusCircle size={20}/> დამატება
+              </button>
+            </div>
+          </div>
+        </header>
+
