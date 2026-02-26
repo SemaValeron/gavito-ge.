@@ -47,9 +47,10 @@ export default function Page() {
     (p.title.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  return (
-    <div className={`${darkMode ? 'dark' : ''}`}>
-      <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-500 font-sans">
+ return (
+    <div className={darkMode ? 'dark' : ''}>
+      {/* Добавляем принудительный фон для всего экрана */}
+      <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-500">
         
         {/* HEADER */}
         <header className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b dark:border-slate-800 p-4 sticky top-0 z-50">
@@ -172,3 +173,4 @@ export default function Page() {
     </div>
   );
 }
+
