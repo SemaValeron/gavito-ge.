@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, PlusCircle, MapPin, Car, Home, Laptop, Briefcase, Settings, Dog, X, ChevronDown, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
-
+import { Search, PlusCircle, Heart, MessageCircle, MapPin, Sparkles, Zap, ShieldCheck, Car, Home, Laptop, Briefcase, Settings, Dog, X, ChevronDown, CheckCircle2, AlertCircle } from 'lucide-react';
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ყველა');
@@ -184,3 +183,4 @@ export default function Page() {
     </div>
   );
 }
+
