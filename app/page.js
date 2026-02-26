@@ -19,13 +19,34 @@ export default function Page() {
 
   const cities = ['ყველა საქართველო', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ზუგდიდი', 'ფოთი', 'გორი'];
 
-  const allProducts = [
+  // Теперь это динамический список
+  const [products, setProducts] = useState([
     { id: 1, title: 'iPhone 15 Pro Max', price: '3200', cat: 'ელექტრონიკა', loc: 'თბილისი', img: '📱' },
     { id: 2, title: 'Toyota Prius 2018', price: '12500', cat: 'ავტომობილები', loc: 'ბათუმი', img: '🚗' },
     { id: 3, title: 'ბინა ვაკეში', price: '150000', cat: 'უძრავი ქონება', loc: 'თბილისი', img: '🏠' },
     { id: 4, title: 'MacBook Air M2', price: '2800', cat: 'ელექტრონიკა', loc: 'ქუთაისი', img: '💻' },
     { id: 5, title: 'BMW E60 M5', price: '18000', cat: 'ავტომობილები', loc: 'თბილისი', img: '🏎️' },
-  ];
+  ]);
+
+  // Функция добавления товара
+  const handlePublish = () => {
+    if (!tempTitle || !tempPrice) return alert("შეავსეთ ყველა ველი!");
+
+    const newProduct = {
+      id: Date.now(), // Уникальный ID через время
+      title: tempTitle,
+      price: tempPrice,
+      cat: selectedCategory === 'ყველა' ? 'სხვა' : selectedCategory,
+      loc: selectedCity,
+      img: '📦' // Стандартная иконка для новых товаров
+    };
+
+    setProducts([newProduct, ...products]); // Добавляем в начало списка
+    setIsModalOpen(false); // Закрываем модалку
+    setTempTitle(''); // Очищаем поля
+    setTempPrice('');
+    setAiAnalysis(null);
+  };
 
   const toggleFavorite = (id) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
@@ -97,12 +118,12 @@ export default function Page() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-yellow-400 transition-all active:scale-90"
-              >
-                {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
-              </button>
+             <button 
+  onClick={handlePublish}
+  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+>
+  გამოქვეყნება
+</button>
               
               <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all text-sm">
                 <PlusCircle size={20}/> <span className="hidden sm:inline">დამატება</span>
@@ -199,3 +220,4 @@ export default function Page() {
     </div>
   );
 }
+
