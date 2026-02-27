@@ -115,7 +115,7 @@ export default function Page() {
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         
-        {/* Рекламный островок — Бесшовное смешивание */}
+        {/* Рекламный островок */}
         <div ref={adRef} className="relative w-full h-48 sm:h-64 mb-10 overflow-hidden rounded-[3rem] shadow-2xl bg-slate-200 dark:bg-slate-800">
           {ADS.map((ad, index) => (
             <div
@@ -124,31 +124,22 @@ export default function Page() {
                 index === currentAd ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
             >
-              <div className="flex items-center gap-6 sm:gap-10 w-full relative z-20">
-                <div className={`text-6xl sm:text-8xl drop-shadow-2xl transition-all duration-1000 ${index === currentAd ? 'scale-100 opacity-100 rotate-0' : 'scale-50 opacity-0 rotate-12'}`}>
+              <div className="flex items-center gap-6 sm:gap-10 w-full relative z-20 text-white">
+                <div className={`text-6xl sm:text-8xl drop-shadow-2xl transition-all duration-1000 ${index === currentAd ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}>
                   {ad.img}
                 </div>
-                <div className={`text-2xl sm:text-5xl font-black text-white leading-tight drop-shadow-lg max-w-2xl transition-all duration-1000 delay-150 ${index === currentAd ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}>
+                <div className={`text-2xl sm:text-5xl font-black leading-tight drop-shadow-lg max-w-2xl transition-all duration-1000 delay-150 ${index === currentAd ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}>
                   {ad.text}
                 </div>
               </div>
-              
-              <div className="absolute top-6 right-8 text-white/40 font-black text-2xl tracking-tighter select-none z-20">
-                GAVITO
-              </div>
-
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-                {ADS.map((_, i) => (
-                  <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i === currentAd ? 'w-8 bg-white' : 'w-2 bg-white/40'}`} />
-                ))}
-              </div>
+              <div className="absolute top-6 right-8 text-white/40 font-black text-2xl tracking-tighter select-none z-20">GAVITO</div>
             </div>
           ))}
         </div>
 
-        {/* Categories Grid */}
+        {/* Categories Grid - ИСПРАВЛЕННЫЙ ШРИФТ */}
         <div className="mb-12">
-          <h2 className="text-xl font-black mb-6 opacity-80 uppercase tracking-widest text-sm dark:text-blue-400">კატეგორიები</h2>
+          <h2 className="text-sm font-black mb-6 opacity-60 uppercase tracking-[0.2em] dark:text-blue-400">კატეგორიები</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
             {CATEGORIES.map(cat => (
               <button 
@@ -160,10 +151,13 @@ export default function Page() {
                   : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-blue-400'
                 }`}
               >
-                <div className={`w-14 h-14 mb-3 rounded-[1.2rem] bg-gradient-to-br ${cat.color} flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-500`}>
-                  {cat.img}
+                <div className={`w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                  <span className="drop-shadow-md">{cat.img}</span>
                 </div>
-                <span className="text-[10px] font-black text-center leading-tight uppercase tracking-tighter opacity-90">
+                {/* Исправленный текст: tracking-normal и font-semibold для лучшей читаемости */}
+                <span className={`text-[12px] font-bold text-center leading-snug tracking-normal px-1 ${
+                  selectedCategory === cat.id ? 'text-white' : 'text-slate-700 dark:text-slate-300'
+                }`}>
                   {cat.name}
                 </span>
               </button>
@@ -172,7 +166,7 @@ export default function Page() {
         </div>
 
         {/* Products Grid */}
-        <h2 className="text-xl font-black mb-6 opacity-80 uppercase tracking-widest text-sm dark:text-blue-400">განცხადებები</h2>
+        <h2 className="text-sm font-black mb-6 opacity-60 uppercase tracking-[0.2em] dark:text-blue-400">ბოლო განცხადებები</h2>
         <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {products.filter(p => {
             const matchesSearch = (p.title || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -181,14 +175,14 @@ export default function Page() {
             return matchesSearch && matchesCat && matchesCity;
           }).map((p) => (
             <div key={p.id} className="group bg-white dark:bg-slate-900 p-5 rounded-[2.8rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500">
-              <div className="relative overflow-hidden w-full aspect-square bg-slate-50 dark:bg-slate-800 rounded-[2rem] mb-5 flex items-center justify-center text-6xl group-hover:scale-[0.98] transition-transform duration-500 text-slate-300">
+              <div className="relative overflow-hidden w-full aspect-square bg-slate-50 dark:bg-slate-800 rounded-[2rem] mb-5 flex items-center justify-center text-6xl group-hover:scale-[0.98] transition-transform duration-500">
                 📦
-                <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black shadow-sm text-slate-900 dark:text-white">{p.location}</div>
+                <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black shadow-sm">{p.location}</div>
               </div>
-              <h3 className="font-bold text-lg mb-1 dark:text-white truncate px-2">{p.title}</h3>
+              <h3 className="font-bold text-lg mb-1 dark:text-white truncate px-2 leading-tight">{p.title}</h3>
               <div className="flex items-center justify-between mt-5 px-2">
                 <div className="text-blue-600 dark:text-blue-400 font-black text-2xl tracking-tighter">{p.price} ₾</div>
-                <button className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900 transition-all active:scale-90">💙</button>
+                <button className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900 transition-all active:scale-90 text-xl">💙</button>
               </div>
             </div>
           ))}
