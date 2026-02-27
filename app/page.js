@@ -1,13 +1,3 @@
-Этот тип ошибки (Expression expected) обычно означает, что в коде остался «мусор» от предыдущих правок — например, лишняя скобка, запятая или невидимый символ в самом начале файла.
-
-Давай сделаем максимально «чистую» установку. Я подготовил код, в котором нет ничего лишнего, только стандартный JavaScript (без TypeScript-символов типа any[] или : string), чтобы Vercel не спотыкался.
-
-Что нужно сделать:
-Полностью очисти файл page.js (или page.tsx). В нем не должно остаться ни одной точки.
-
-Скопируй и вставь этот код:
-
-JavaScript
 'use client';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -24,6 +14,7 @@ export default function Page() {
   const [tempPrice, setTempPrice] = useState('');
   const [tempLocation, setTempLocation] = useState('თბილისი');
   const [tempCat, setTempCat] = useState('tech');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const CATEGORIES = [
     { id: 'all', name: 'ყველა', icon: '🛍️' },
@@ -33,7 +24,15 @@ export default function Page() {
     { id: 'jobs', name: 'ვაკანსია', icon: '💼' },
   ];
 
-  const CITIES = ['ყველა ქალაქი', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი'];
+  const CITIES = ['ყველა ქალაქი', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი', 'ზუგდიდი', 'თელავი'];
+
+  const MARKET_DATA = {
+    'iphone 17': 4500,
+    'iphone 16': 3500,
+    'iphone 15': 2200,
+    'ps5': 1400,
+    'macbook': 4000
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -41,37 +40,37 @@ export default function Page() {
   }, []);
 
   async function fetchProducts() {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching:', error);
-    } else {
-      setProducts(data || []);
-    }
+    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (data) setProducts(data);
   }
+
+  const getAiAdvice = (price, title) => {
+    if (!price || !title) return null;
+    const p = parseFloat(price);
+    const name = title.toLowerCase();
+    let foundKey = Object.keys(MARKET_DATA).find(k => name.includes(k));
+    
+    if (foundKey) {
+      const marketPrice = MARKET_DATA[foundKey];
+      if (p < marketPrice * 0.4) return "⚠️ ფასი საეჭვოდ დაბალია ბაზართან შედარებით!";
+      if (p > marketPrice * 1.3) return "📈 ფასი მაღალია, სხვაგან უფრო იაფად იყიდება.";
+      return "✅ კარგი ფასია, შეესაბამება საბაზრო ღირებულებას.";
+    }
+    return "🔍 ფასი მისაღებია მოცემული კატეგორიისთვის.";
+  };
 
   const handlePublish = async () => {
     if (!tempTitle || !tempPrice) return alert("შეავსეთ ველები!");
-    
-    const { error } = await supabase.from('products').insert([{ 
+    await supabase.from('products').insert([{ 
       title: tempTitle, 
       price: parseFloat(tempPrice), 
       location: tempLocation, 
       category: tempCat, 
       image: 'https://via.placeholder.com/300'
     }]);
-
-    if (error) {
-      alert("შეცდომა ბაზაში: " + error.message);
-    } else {
-      setIsModalOpen(false);
-      setTempTitle('');
-      setTempPrice('');
-      fetchProducts();
-    }
+    setIsModalOpen(false);
+    setTempTitle(''); setTempPrice('');
+    fetchProducts();
   };
 
   const filtered = products.filter(p => {
@@ -85,31 +84,23 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="bg-white border-b p-4 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <header className="bg-white border-b p-4 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
           <div className="text-2xl font-black text-blue-600">GAVITO</div>
-          <div className="flex-1 flex gap-2 w-full max-w-xl">
+          <div className="flex-1 flex gap-2 w-full">
             <input 
-              type="text" 
-              placeholder="ძებნა..." 
+              type="text" placeholder="ძებნა..." 
               className="flex-[2] p-3 bg-slate-100 rounded-2xl outline-none border-2 border-transparent focus:border-blue-500"
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             />
             <select 
-              className="flex-1 p-3 bg-slate-100 rounded-2xl outline-none font-bold"
-              value={selectedCity} 
-              onChange={(e) => setSelectedCity(e.target.value)}
+              className="flex-1 p-3 bg-slate-100 rounded-2xl outline-none font-bold cursor-pointer"
+              value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}
             >
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <button 
-            onClick={() => setIsModalOpen(true)} 
-            className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-colors"
-          >
-            დამატება
-          </button>
+          <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">დამატება</button>
         </div>
       </header>
 
@@ -119,7 +110,7 @@ export default function Page() {
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
-              selectedCategory === cat.id ? 'bg-blue-600 text-white' : 'bg-white border'
+              selectedCategory === cat.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white border text-slate-600'
             }`}
           >
             <span>{cat.icon}</span> {cat.name}
@@ -129,67 +120,54 @@ export default function Page() {
 
       <main className="max-w-7xl mx-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filtered.map((p) => (
-          <div key={p.id} className="bg-white p-4 rounded-[2rem] border shadow-sm">
-            <div className="w-full aspect-square bg-slate-100 rounded-[1.5rem] mb-4 flex items-center justify-center text-4xl">📦</div>
-            <h3 className="font-bold text-lg">{p.title}</h3>
-            <p className="text-slate-400 text-sm">📍 {p.location}</p>
-            <div className="text-blue-600 font-black text-2xl mt-2">{p.price} ₾</div>
+          <div key={p.id} className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
+            <div className="w-full aspect-square bg-slate-50 rounded-[1.5rem] mb-4 flex items-center justify-center text-4xl">📦</div>
+            <h3 className="font-bold text-lg mb-1">{p.title}</h3>
+            <p className="text-slate-400 text-sm mb-3">📍 {p.location}</p>
+            <div className="text-blue-600 font-black text-2xl">{p.price} ₾</div>
           </div>
         ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full text-center py-20 text-slate-400 font-medium">
-            განცხადებები არ მოიძებნა
-          </div>
-        )}
       </main>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 relative">
-            <button 
-              onClick={() => setIsModalOpen(false)} 
-              className="absolute top-6 right-6 font-bold p-2 text-slate-400 hover:text-black"
-            >
-              ✕
-            </button>
-            <h2 className="text-2xl font-black mb-6">დამატება</h2>
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 relative shadow-2xl">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 font-bold text-slate-400 hover:text-black transition-colors">✕</button>
+            <h2 className="text-2xl font-black mb-6 uppercase tracking-tighter">ახალი განცხადება</h2>
+            
             <div className="space-y-4">
-              <input 
-                type="text" 
-                placeholder="სათაური" 
-                className="w-full p-4 bg-slate-100 rounded-2xl outline-none" 
-                value={tempTitle} 
-                onChange={(e) => setTempTitle(e.target.value)} 
-              />
+              <input type="text" placeholder="რა ნივთს ყიდით?" className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 ring-blue-500/20" value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
+              
               <div className="grid grid-cols-2 gap-2">
-                <select 
-                  className="p-4 bg-slate-100 rounded-2xl outline-none" 
-                  value={tempCat} 
-                  onChange={(e) => setTempCat(e.target.value)}
-                >
+                <select className="p-4 bg-slate-100 rounded-2xl outline-none" value={tempCat} onChange={(e) => setTempCat(e.target.value)}>
                   {CATEGORIES.slice(1).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <select 
-                  className="p-4 bg-slate-100 rounded-2xl outline-none" 
-                  value={tempLocation} 
-                  onChange={(e) => setTempLocation(e.target.value)}
-                >
+                <select className="p-4 bg-slate-100 rounded-2xl outline-none" value={tempLocation} onChange={(e) => setTempLocation(e.target.value)}>
                   {CITIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+
               <input 
-                type="number" 
-                placeholder="ფასი" 
+                type="number" placeholder="ფასი (₾)" 
                 className="w-full p-4 bg-slate-100 rounded-2xl outline-none" 
                 value={tempPrice} 
-                onChange={(e) => setTempPrice(e.target.value)} 
+                onChange={(e) => {
+                  setTempPrice(e.target.value);
+                  setIsAnalyzing(true);
+                  setTimeout(() => setIsAnalyzing(false), 600);
+                }} 
               />
-              <button 
-                onClick={handlePublish} 
-                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg active:scale-95 transition-all"
-              >
-                გამოქვეყნება
-              </button>
+
+              {(tempPrice && tempTitle) && (
+                <div className="p-4 bg-blue-600 rounded-[1.5rem] text-white animate-in fade-in zoom-in duration-300">
+                  <div className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">
+                    {isAnalyzing ? "🌐 ბაზრის ანალიზი..." : "🤖 AI ასისტენტი"}
+                  </div>
+                  {!isAnalyzing && <p className="text-sm font-medium">{getAiAdvice(tempPrice, tempTitle)}</p>}
+                </div>
+              )}
+
+              <button onClick={handlePublish} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg active:scale-95 transition-all">გამოქვეყნება</button>
             </div>
           </div>
         </div>
