@@ -16,13 +16,25 @@ export default function Page() {
   const [tempPrice, setTempPrice] = useState('');
   const [tempCat, setTempCat] = useState('tech');
   const [tempLocation, setTempLocation] = useState('თბილისი');
-  const [tempImage, setTempImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // Состояния для ИИ
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Реклама
   const [currentAd, setCurrentAd] = useState(0);
   const adRef = useRef(null);
   const isVisible = useRef(true);
+
+  const MARKET_DATA = {
+    'iphone 16': 3500,
+    'iphone 15': 2200,
+    'ps5': 1300,
+    'macbook': 4200,
+    'airpods': 550,
+    'dyson': 1400,
+    'nintendo': 900
+  };
 
   const ADS = [
     { text: "GAVITO — შენი საიმედო მარკეტპლეისი", img: "🚀", color: "from-blue-600 to-indigo-700" },
@@ -62,28 +74,36 @@ export default function Page() {
     if (data) setProducts(data);
   }
 
-  // Логика выбора фото
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setTempImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
+    if (file) setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const getAiAdvice = () => {
+    if (!tempPrice || !tempTitle) return null;
+    const p = parseFloat(tempPrice);
+    const titleLower = tempTitle.toLowerCase();
+    
+    let key = Object.keys(MARKET_DATA).find(k => titleLower.includes(k));
+    
+    if (key) {
+      const marketPrice = MARKET_DATA[key];
+      if (p < marketPrice * 0.5) return "⚠️ ფასი საეჭვოდ დაბალია! დარწმუნდით, რომ პროდუქტი ორიგინალია.";
+      if (p > marketPrice * 1.3) return "📈 ფასი მაღალია ბაზართან შედარებით. გაყიდვა შეიძლება გაგიჭირდეთ.";
+      return "✅ იდეალური ფასია! თქვენი ნივთი სწრაფად გაიყიდება.";
     }
+    return "🔍 ფასი ნორმალურია ამ კატეგორიისთვის.";
   };
 
   const handlePublish = async () => {
     if (!tempTitle || !tempPrice) return alert("შეავსეთ ყველა ველი!");
-    
-    // В реальности здесь должна быть загрузка в Supabase Storage
-    // Для этого кода используем превью или заглушку
-    const { data, error } = await supabase.from('products').insert([{ 
+    const { error } = await supabase.from('products').insert([{ 
       title: tempTitle, 
       price: parseFloat(tempPrice),
       category: tempCat,
       location: tempLocation,
       image: previewUrl || 'https://via.placeholder.com/400'
     }]);
-
     if (!error) {
       setIsModalOpen(false);
       resetForm();
@@ -92,12 +112,7 @@ export default function Page() {
   };
 
   const resetForm = () => {
-    setTempTitle('');
-    setTempPrice('');
-    setTempCat('tech');
-    setTempLocation('თბილისი');
-    setTempImage(null);
-    setPreviewUrl(null);
+    setTempTitle(''); setTempPrice(''); setPreviewUrl(null);
   };
 
   if (!mounted) return null;
@@ -108,18 +123,15 @@ export default function Page() {
       {/* Header */}
       <header className={`p-4 sticky top-0 z-50 border-b transition-colors duration-500 ${darkMode ? 'bg-[#1e293b] border-slate-800' : 'bg-white border-slate-200'}`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
-          <div className="text-3xl font-black text-blue-600 tracking-tighter cursor-pointer">GAVITO</div>
-          <div className="flex-1 flex gap-2 w-full">
+          <div className="text-3xl font-black text-blue-600 tracking-tighter">GAVITO</div>
+          <div className="flex-1 w-full">
             <input 
-              type="text" placeholder="მოძებნე..." 
-              className={`flex-[2] p-4 rounded-2xl outline-none border-2 border-transparent focus:border-blue-500 transition-all ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
+              type="text" placeholder="მოძებნე ყველაფერი..." 
+              className={`w-full p-4 rounded-2xl outline-none border-2 border-transparent focus:border-blue-500 transition-all ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setDarkMode(!darkMode)} className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xl">{darkMode ? '☀️' : '🌙'}</button>
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 active:scale-95 transition-all">განცხადება</button>
-          </div>
+          <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 active:scale-95 transition-all">განცხადება</button>
         </div>
       </header>
 
@@ -128,9 +140,10 @@ export default function Page() {
         {/* Banner */}
         <div className="relative w-full h-48 sm:h-64 mb-10 overflow-hidden rounded-[3rem] shadow-2xl bg-slate-800">
           {ADS.map((ad, index) => (
-            <div key={index} className={`absolute inset-0 w-full h-full flex items-center p-8 bg-gradient-to-r ${ad.color} transition-opacity duration-1000 ${index === currentAd ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
-              <div className="text-5xl sm:text-7xl mr-6">{ad.img}</div>
-              <div className="text-2xl sm:text-4xl font-black text-white">{ad.text}</div>
+            <div key={index} className={`absolute inset-0 w-full h-full flex items-center p-12 bg-gradient-to-r ${ad.color} transition-opacity duration-1000 ${index === currentAd ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+              <div className="text-6xl mr-8">{ad.img}</div>
+              <div className="text-3xl font-black text-white">{ad.text}</div>
+              <div className="absolute top-6 right-8 text-white/30 font-black text-2xl">GAVITO</div>
             </div>
           ))}
         </div>
@@ -140,7 +153,7 @@ export default function Page() {
           {CATEGORIES.map(cat => (
             <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={`flex flex-col items-center p-5 rounded-[2.5rem] transition-all ${selectedCategory === cat.id ? 'bg-blue-600 text-white scale-105 shadow-xl' : 'bg-white dark:bg-slate-900 border dark:border-slate-800 hover:border-blue-400'}`}>
               <div className={`w-14 h-14 mb-3 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-3xl shadow-md`}>{cat.img}</div>
-              <span className="text-[12px] font-bold tracking-normal text-center">{cat.name}</span>
+              <span className="text-[12px] font-bold tracking-normal text-center leading-tight px-1">{cat.name}</span>
             </button>
           ))}
         </div>
@@ -149,8 +162,8 @@ export default function Page() {
         <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {products.filter(p => (selectedCategory === 'all' || p.category === selectedCategory)).map((p) => (
             <div key={p.id} className="bg-white dark:bg-slate-900 p-5 rounded-[2.8rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all group">
-              <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 rounded-[2rem] mb-4 overflow-hidden">
-                {p.image ? <img src={p.image} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-5xl opacity-20">📦</div>}
+              <div className="relative w-full aspect-square bg-slate-100 dark:bg-slate-800 rounded-[2rem] mb-4 overflow-hidden flex items-center justify-center">
+                {p.image ? <img src={p.image} className="w-full h-full object-cover" alt="" /> : <span className="text-5xl opacity-20">📦</span>}
               </div>
               <h3 className="font-bold text-lg truncate px-2">{p.title}</h3>
               <p className="text-xs opacity-50 px-2 mb-4">📍 {p.location}</p>
@@ -163,45 +176,56 @@ export default function Page() {
         </main>
       </div>
 
-      {/* MODAL - Добавление товара */}
+      {/* MODAL С ИИ ОЦЕНЩИКОМ */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
           <div className={`w-full max-w-md rounded-[3.5rem] p-10 relative shadow-2xl animate-in zoom-in duration-300 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-10 right-10 text-xl opacity-50 hover:opacity-100 transition-opacity">✕</button>
-            <h2 className="text-3xl font-black mb-8 tracking-tighter uppercase text-center">ახალი განცხადება</h2>
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-10 right-10 text-xl opacity-50">✕</button>
+            <h2 className="text-3xl font-black mb-8 uppercase text-center tracking-tighter">განცხადება</h2>
             
             <div className="space-y-4">
-              {/* Загрузка ФОТО */}
-              <div className="relative group">
-                <label className="flex flex-col items-center justify-center w-full h-40 border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] cursor-pointer hover:border-blue-500 transition-all overflow-hidden bg-slate-50 dark:bg-slate-800">
-                  {previewUrl ? (
-                    <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
-                  ) : (
-                    <div className="flex flex-col items-center text-center px-4">
-                      <span className="text-4xl mb-2">📸</span>
-                      <span className="text-xs font-black opacity-60">ფოტოს დამატება</span>
-                      <span className="text-[10px] opacity-40 mt-1">(სმარტფონით გადაიღეთ ან აირჩიეთ ფაილი)</span>
-                    </div>
-                  )}
-                  {/* Скрытый инпут с поддержкой камеры на мобайле */}
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
-                </label>
-              </div>
+              {/* Фото */}
+              <label className="flex flex-col items-center justify-center w-full h-32 border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] cursor-pointer hover:border-blue-500 transition-all overflow-hidden bg-slate-50 dark:bg-slate-800">
+                {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-xs font-black opacity-50 uppercase">📸 ფოტოს დამატება</span>}
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
+              </label>
 
-              <input type="text" placeholder="სათაური" className={`w-full p-5 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
+              <input type="text" placeholder="რა ნივთს ყიდით?" className={`w-full p-5 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
               
               <div className="grid grid-cols-2 gap-4">
-                <select className={`p-5 rounded-2xl font-bold outline-none appearance-none ${darkMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`} value={tempCat} onChange={(e) => setTempCat(e.target.value)}>
+                <select className={`p-5 rounded-2xl font-bold outline-none ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempCat} onChange={(e) => setTempCat(e.target.value)}>
                   {CATEGORIES.slice(1).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <select className={`p-5 rounded-2xl font-bold outline-none appearance-none ${darkMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}`} value={tempLocation} onChange={(e) => setTempLocation(e.target.value)}>
+                <select className={`p-5 rounded-2xl font-bold outline-none ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempLocation} onChange={(e) => setTempLocation(e.target.value)}>
                   {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
 
-              <input type="number" placeholder="ფასი (₾)" className={`w-full p-5 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempPrice} onChange={(e) => setTempPrice(e.target.value)} />
+              <input 
+                type="number" placeholder="ფასი (₾)" 
+                className={`w-full p-5 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-500 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} 
+                value={tempPrice} 
+                onChange={(e) => {
+                  setTempPrice(e.target.value);
+                  setIsAnalyzing(true);
+                  setTimeout(() => setIsAnalyzing(false), 800);
+                }} 
+              />
 
-              <button onClick={handlePublish} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all mt-4 active:scale-95">გამოქვეყნება</button>
+              {/* ИИ ОЦЕНЩИК (БЛОК) */}
+              {(tempPrice && tempTitle) && (
+                <div className="p-5 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2rem] text-white animate-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xl">🤖</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">GAVITO AI ასისტენტი</span>
+                  </div>
+                  <p className="text-sm font-bold leading-tight">
+                    {isAnalyzing ? "ბაზრის ანალიზი..." : getAiAdvice()}
+                  </p>
+                </div>
+              )}
+
+              <button onClick={handlePublish} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all mt-4">გამოქვეყნება</button>
             </div>
           </div>
         </div>
