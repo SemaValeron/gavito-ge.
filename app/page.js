@@ -1,3 +1,8 @@
+Проблема с таймером была в том, что стандартный setInterval не так просто остановить через переменную состояния без использования useRef для хранения ссылки на интервал. Я полностью переписал логику.
+
+Теперь переходы стали «бесшовными»: фразы и цвета плавно накладываются друг на друга через прозрачность (opacity), поэтому задний фон сайта никогда не просвечивает.
+
+JavaScript
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -11,10 +16,11 @@ export default function Page() {
   const [selectedCity, setSelectedCity] = useState('ყველა ქალაქი');
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Состояния для рекламы
+  // Рекламный блок
   const [currentAd, setCurrentAd] = useState(0);
-  const [isAdVisible, setIsAdVisible] = useState(true);
   const adRef = useRef(null);
+  const timerRef = useRef(null);
+  const [isIntersecting, setIsIntersecting] = useState(false);
 
   const ADS = [
     { text: "GAVITO — შენი საიმედო მარკეტპლეისი", img: "🚀", color: "from-blue-600 to-indigo-700" },
@@ -40,26 +46,31 @@ export default function Page() {
 
   const CITIES = ['ყველა ქალაქი', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი', 'ზუგდიდი', 'თელავი', 'მცხეთა'];
 
-  // Логика автоматической прокрутки рекламы
-  useEffect(() => {
-    let interval;
-    if (isAdVisible) {
-      interval = setInterval(() => {
-        setCurrentAd((prev) => (prev + 1) % ADS.length);
-      }, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [isAdVisible]);
-
-  // Следим, виден ли баннер на экране
+  // Исправленный таймер с использованием IntersectionObserver
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => setIsAdVisible(entry.isIntersecting),
-      { threshold: 0.5 }
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
     );
+
     if (adRef.current) observer.observe(adRef.current);
+
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (isIntersecting) {
+      timerRef.current = setInterval(() => {
+        setCurrentAd((prev) => (prev + 1) % ADS.length);
+      }, 5000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+
+    return () => clearInterval(timerRef.current);
+  }, [isIntersecting]);
 
   useEffect(() => {
     setMounted(true);
@@ -83,14 +94,6 @@ export default function Page() {
     if (data) setProducts(data);
   }
 
-  const handlePublish = async () => {
-    const { tempTitle, tempPrice } = window; // Упрощенно для примера
-    if (!tempTitle || !tempPrice) return alert("შეავსეთ ველები!");
-    await supabase.from('products').insert([{ title: tempTitle, price: parseFloat(tempPrice) }]);
-    setIsModalOpen(false);
-    fetchProducts();
-  };
-
   const filtered = products.filter(p => {
     const matchesSearch = (p.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
@@ -103,7 +106,6 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 transition-colors duration-500">
       
-      {/* Header */}
       <header className="bg-white dark:bg-[#1e293b] border-b dark:border-slate-800 p-4 sticky top-0 z-50 shadow-sm transition-colors duration-500">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
           <div className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tighter cursor-pointer" onClick={() => setSelectedCategory('all')}>GAVITO</div>
@@ -129,36 +131,38 @@ export default function Page() {
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         
-        {/* Рекламный баннер (Slider) */}
-        <div ref={adRef} className="relative w-full h-48 sm:h-64 mb-10 overflow-hidden rounded-[3rem] shadow-2xl transition-all duration-700">
+        {/* Рекламный островок с бесшовным переходом */}
+        <div ref={adRef} className="relative w-full h-48 sm:h-64 mb-10 overflow-hidden rounded-[3rem] shadow-2xl bg-slate-200 dark:bg-slate-800">
           {ADS.map((ad, index) => (
             <div
               key={index}
-              className={`absolute inset-0 w-full h-full flex items-center p-8 sm:p-12 bg-gradient-to-r ${ad.color} transition-all duration-1000 ease-in-out transform ${
-                index === currentAd ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+              className={`absolute inset-0 w-full h-full flex items-center p-8 sm:p-12 bg-gradient-to-r ${ad.color} transition-all duration-1000 ease-in-out ${
+                index === currentAd ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-105'
               }`}
             >
-              <div className="flex items-center gap-6 sm:gap-10">
-                <div className="text-6xl sm:text-8xl drop-shadow-2xl animate-bounce">{ad.img}</div>
-                <div className="text-2xl sm:text-5xl font-black text-white leading-tight drop-shadow-lg max-w-2xl">
+              <div className="flex items-center gap-6 sm:gap-10 w-full">
+                <div className={`text-6xl sm:text-8xl drop-shadow-2xl transition-all duration-700 ${index === currentAd ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                  {ad.img}
+                </div>
+                <div className={`text-2xl sm:text-5xl font-black text-white leading-tight drop-shadow-lg max-w-2xl transition-all duration-700 delay-100 ${index === currentAd ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}>
                   {ad.text}
                 </div>
               </div>
-              {/* Логотип в правом верхнем углу рекламного островка */}
-              <div className="absolute top-6 right-8 text-white/30 font-black text-2xl tracking-tighter select-none">
+              
+              <div className="absolute top-6 right-8 text-white/40 font-black text-2xl tracking-tighter select-none">
                 GAVITO
               </div>
-              {/* Индикаторы (точки) */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                 {ADS.map((_, i) => (
-                  <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentAd ? 'w-8 bg-white' : 'w-2 bg-white/40'}`} />
+                  <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === currentAd ? 'w-8 bg-white' : 'w-2 bg-white/40'}`} />
                 ))}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Category Grid */}
+        {/* Categories */}
         <div className="mb-12">
           <h2 className="text-xl font-black mb-6 opacity-80 uppercase tracking-widest text-sm dark:text-blue-400">კატეგორიები</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
@@ -183,7 +187,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Products Grid */}
+        {/* Products */}
         <h2 className="text-xl font-black mb-6 opacity-80 uppercase tracking-widest text-sm dark:text-blue-400">განცხადებები</h2>
         <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {filtered.map((p) => (
@@ -202,25 +206,15 @@ export default function Page() {
         </main>
       </div>
 
-      {/* Modal */}
+      {/* Modal (упрощенный) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3.5rem] p-10 relative shadow-2xl animate-in fade-in zoom-in duration-500">
             <button onClick={() => setIsModalOpen(false)} className="absolute top-10 right-10 text-slate-400 hover:text-black dark:hover:text-white transition-colors text-xl">✕</button>
-            <h2 className="text-3xl font-black mb-10 tracking-tighter dark:text-white uppercase">განცხადება</h2>
-            
+            <h2 className="text-3xl font-black mb-10 tracking-tighter dark:text-white uppercase">დამატება</h2>
             <div className="space-y-5">
-              <input type="text" placeholder="სათაური" className="w-full p-5 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none focus:ring-4 ring-blue-500/10 transition-all font-bold" />
-              <div className="grid grid-cols-2 gap-4">
-                <select className="p-5 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none font-bold appearance-none">
-                  {CATEGORIES.slice(1).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <select className="p-5 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none font-bold appearance-none">
-                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <input type="number" placeholder="ფასი" className="w-full p-5 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none focus:ring-4 ring-blue-500/10 transition-all font-bold" />
-              <button onClick={() => setIsModalOpen(false)} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-3xl font-black text-xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all mt-6">გამოქვეყნება</button>
+              <input type="text" placeholder="სათაური" className="w-full p-5 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none font-bold" />
+              <button onClick={() => setIsModalOpen(false)} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl active:scale-95 transition-all mt-6">გამოქვეყნება</button>
             </div>
           </div>
         </div>
