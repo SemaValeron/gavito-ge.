@@ -11,11 +11,10 @@ export default function Page() {
   const [selectedCity, setSelectedCity] = useState('ყველა ქალაქი');
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Рекламный блок
   const [currentAd, setCurrentAd] = useState(0);
   const adRef = useRef(null);
   const timerRef = useRef(null);
-  const [isIntersecting, setIsIntersecting] = useState(false);
+  const isVisible = useRef(true);
 
   const ADS = [
     { text: "GAVITO — შენი საიმედო მარკეტპლეისი", img: "🚀", color: "from-blue-600 to-indigo-700" },
@@ -41,37 +40,34 @@ export default function Page() {
 
   const CITIES = ['ყველა ქალაქი', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი', 'ზუგდიდი', 'თელავი', 'მცხეთა'];
 
-  // Исправленный таймер с использованием IntersectionObserver
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsIntersecting(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (adRef.current) observer.observe(adRef.current);
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (isIntersecting) {
-      timerRef.current = setInterval(() => {
-        setCurrentAd((prev) => (prev + 1) % ADS.length);
-      }, 5000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-
-    return () => clearInterval(timerRef.current);
-  }, [isIntersecting]);
-
   useEffect(() => {
     setMounted(true);
     fetchProducts();
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') setDarkMode(true);
+
+    const startTimer = () => {
+      timerRef.current = setInterval(() => {
+        if (isVisible.current) {
+          setCurrentAd((prev) => (prev + 1) % ADS.length);
+        }
+      }, 5000);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible.current = entry.isIntersecting;
+      },
+      { threshold: 0.1 }
+    );
+
+    if (adRef.current) observer.observe(adRef.current);
+    startTimer();
+
+    return () => {
+      clearInterval(timerRef.current);
+      observer.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -88,13 +84,6 @@ export default function Page() {
     const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (data) setProducts(data);
   }
-
-  const filtered = products.filter(p => {
-    const matchesSearch = (p.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
-    const matchesCity = selectedCity === 'ყველა ქალაქი' || p.location === selectedCity;
-    return matchesSearch && matchesCat && matchesCity;
-  });
 
   if (!mounted) return null;
 
@@ -126,38 +115,38 @@ export default function Page() {
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         
-        {/* Рекламный островок с бесшовным переходом */}
+        {/* Рекламный островок — Бесшовное смешивание */}
         <div ref={adRef} className="relative w-full h-48 sm:h-64 mb-10 overflow-hidden rounded-[3rem] shadow-2xl bg-slate-200 dark:bg-slate-800">
           {ADS.map((ad, index) => (
             <div
               key={index}
-              className={`absolute inset-0 w-full h-full flex items-center p-8 sm:p-12 bg-gradient-to-r ${ad.color} transition-all duration-1000 ease-in-out ${
-                index === currentAd ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-105'
+              className={`absolute inset-0 w-full h-full flex items-center p-8 sm:p-12 bg-gradient-to-r ${ad.color} transition-all duration-[1500ms] ease-in-out ${
+                index === currentAd ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
             >
-              <div className="flex items-center gap-6 sm:gap-10 w-full">
-                <div className={`text-6xl sm:text-8xl drop-shadow-2xl transition-all duration-700 ${index === currentAd ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+              <div className="flex items-center gap-6 sm:gap-10 w-full relative z-20">
+                <div className={`text-6xl sm:text-8xl drop-shadow-2xl transition-all duration-1000 ${index === currentAd ? 'scale-100 opacity-100 rotate-0' : 'scale-50 opacity-0 rotate-12'}`}>
                   {ad.img}
                 </div>
-                <div className={`text-2xl sm:text-5xl font-black text-white leading-tight drop-shadow-lg max-w-2xl transition-all duration-700 delay-100 ${index === currentAd ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}>
+                <div className={`text-2xl sm:text-5xl font-black text-white leading-tight drop-shadow-lg max-w-2xl transition-all duration-1000 delay-150 ${index === currentAd ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}>
                   {ad.text}
                 </div>
               </div>
               
-              <div className="absolute top-6 right-8 text-white/40 font-black text-2xl tracking-tighter select-none">
+              <div className="absolute top-6 right-8 text-white/40 font-black text-2xl tracking-tighter select-none z-20">
                 GAVITO
               </div>
 
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
                 {ADS.map((_, i) => (
-                  <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === currentAd ? 'w-8 bg-white' : 'w-2 bg-white/40'}`} />
+                  <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i === currentAd ? 'w-8 bg-white' : 'w-2 bg-white/40'}`} />
                 ))}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Categories */}
+        {/* Categories Grid */}
         <div className="mb-12">
           <h2 className="text-xl font-black mb-6 opacity-80 uppercase tracking-widest text-sm dark:text-blue-400">კატეგორიები</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4">
@@ -182,14 +171,19 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Products */}
+        {/* Products Grid */}
         <h2 className="text-xl font-black mb-6 opacity-80 uppercase tracking-widest text-sm dark:text-blue-400">განცხადებები</h2>
         <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {filtered.map((p) => (
+          {products.filter(p => {
+            const matchesSearch = (p.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+            const matchesCity = selectedCity === 'ყველა ქალაქი' || p.location === selectedCity;
+            return matchesSearch && matchesCat && matchesCity;
+          }).map((p) => (
             <div key={p.id} className="group bg-white dark:bg-slate-900 p-5 rounded-[2.8rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500">
-              <div className="relative overflow-hidden w-full aspect-square bg-slate-50 dark:bg-slate-800 rounded-[2rem] mb-5 flex items-center justify-center text-6xl group-hover:scale-[0.98] transition-transform duration-500">
+              <div className="relative overflow-hidden w-full aspect-square bg-slate-50 dark:bg-slate-800 rounded-[2rem] mb-5 flex items-center justify-center text-6xl group-hover:scale-[0.98] transition-transform duration-500 text-slate-300">
                 📦
-                <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black shadow-sm">{p.location}</div>
+                <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black shadow-sm text-slate-900 dark:text-white">{p.location}</div>
               </div>
               <h3 className="font-bold text-lg mb-1 dark:text-white truncate px-2">{p.title}</h3>
               <div className="flex items-center justify-between mt-5 px-2">
@@ -201,15 +195,15 @@ export default function Page() {
         </main>
       </div>
 
-      {/* Modal (упрощенный) */}
+      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3.5rem] p-10 relative shadow-2xl animate-in fade-in zoom-in duration-500">
             <button onClick={() => setIsModalOpen(false)} className="absolute top-10 right-10 text-slate-400 hover:text-black dark:hover:text-white transition-colors text-xl">✕</button>
-            <h2 className="text-3xl font-black mb-10 tracking-tighter dark:text-white uppercase">დამატება</h2>
+            <h2 className="text-3xl font-black mb-10 tracking-tighter dark:text-white uppercase text-center">განცხადება</h2>
             <div className="space-y-5">
               <input type="text" placeholder="სათაური" className="w-full p-5 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none font-bold" />
-              <button onClick={() => setIsModalOpen(false)} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl active:scale-95 transition-all mt-6">გამოქვეყნება</button>
+              <button onClick={() => setIsModalOpen(false)} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl active:scale-95 transition-all mt-6 shadow-xl shadow-blue-500/20">გამოქვეყნება</button>
             </div>
           </div>
         </div>
@@ -217,4 +211,3 @@ export default function Page() {
     </div>
   );
 }
-
