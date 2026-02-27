@@ -22,17 +22,22 @@ export default function Page() {
     { id: 'cars', name: 'ავტო', icon: '🚗' },
     { id: 'realestate', name: 'უძრავი ქონება', icon: '🏠' },
     { id: 'tech', name: 'ტექნიკა', icon: '📱' },
-    { id: 'jobs', name: 'ვაკანსია', icon: '💼' },
+    { id: 'home', name: 'სახლი და ბაღი', icon: '🌿' },
+    { id: 'fashion', name: 'ტანსაცმელი', icon: '👕' },
+    { id: 'beauty', name: 'სილამაზე', icon: '✨' },
+    { id: 'sport', name: 'სპორტი', icon: '⚽' },
+    { id: 'kids', name: 'ყველაფერი ბავშვებისთვის', icon: '🧸' },
   ];
 
-  const CITIES = ['ყველა ქალაქი', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი', 'ზუგდიდი', 'თელავი'];
+  const CITIES = ['ყველა ქალაქი', 'თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი', 'ზუგდიდი', 'თელავი', 'მცხეთა', 'ქობულეთი'];
 
   const MARKET_DATA = {
     'iphone 17': 4500,
     'iphone 16': 3500,
     'iphone 15': 2200,
     'ps5': 1400,
-    'macbook': 4000
+    'macbook': 4000,
+    'airpods': 600
   };
 
   useEffect(() => {
@@ -99,7 +104,7 @@ export default function Page() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500 ease-in-out">
       <header className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-4 sticky top-0 z-50 shadow-sm transition-colors duration-500">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
-          <div className="text-2xl font-black text-blue-600 dark:text-blue-400">GAVITO</div>
+          <div className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">GAVITO</div>
           <div className="flex-1 flex gap-2 w-full">
             <input 
               type="text" placeholder="ძებნა..." 
@@ -116,7 +121,7 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setDarkMode(!darkMode)}
-              className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-xl"
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
@@ -130,7 +135,7 @@ export default function Page() {
           <button 
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap ${
               selectedCategory === cat.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 border dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-blue-500'
             }`}
           >
@@ -157,7 +162,7 @@ export default function Page() {
             <h2 className="text-2xl font-black mb-6 uppercase tracking-tighter dark:text-white">ახალი განცხადება</h2>
             
             <div className="space-y-4">
-              <input type="text" placeholder="რა ნივთს ყიდით?" className="w-full p-4 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none focus:ring-2 ring-blue-500/20" value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
+              <input type="text" placeholder="სათაური" className="w-full p-4 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none focus:ring-2 ring-blue-500/20" value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
               
               <div className="grid grid-cols-2 gap-2">
                 <select className="p-4 bg-slate-100 dark:bg-slate-800 dark:text-white rounded-2xl outline-none" value={tempCat} onChange={(e) => setTempCat(e.target.value)}>
