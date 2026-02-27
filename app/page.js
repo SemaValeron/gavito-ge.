@@ -8,10 +8,9 @@ export default function Page() {
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedCity, setSelectedCity] = useState('ყველა ქალაქი');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Форма товара
+  // Состояния для публикации
   const [tempTitle, setTempTitle] = useState('');
   const [tempPrice, setTempPrice] = useState('');
   const [tempCat, setTempCat] = useState('tech');
@@ -19,27 +18,9 @@ export default function Page() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const adRef = useRef(null);
-  const [currentAd, setCurrentAd] = useState(0);
-
-  // --- БАЗА ДАННЫХ ДЛЯ ИИ (Рыночные лимиты) ---
-  const MARKET_LIMITS = {
-    tech: { min: 20, max: 10000, label: 'ტექნიკა' },
-    cars: { min: 1000, max: 300000, label: 'ავტომობილი' },
-    fashion: { min: 5, max: 5000, label: 'ტანსაცმელი' },
-    beauty: { min: 5, max: 2000, label: 'მოვლა' },
-    realestate: { min: 100, max: 1000000, label: 'უძრავი ქონება' }
-  };
-
-  const SPECIFIC_ITEMS = {
-    'iphone 16': 3500, 'iphone 15': 2400, 'ps5': 1400, 'bmw': 25000, 
-    'toyota': 15000, 'nike': 300, 'dyson': 1500, 'rolex': 30000
-  };
-
   const ADS = [
     { text: "GAVITO — შენი საიმედო მარკეტპლეისი", img: "🚀", color: "from-blue-600 to-indigo-700" },
     { text: "ენდე ჩვენს AI შემფასებელს — გაიგე რეალური ფასი", img: "🤖", color: "from-purple-600 to-pink-600" },
-    { text: "გაყიდე სწრაფად და მარტივად ჩვენთან", img: "⚡", color: "from-orange-500 to-red-600" },
   ];
 
   const CATEGORIES = [
@@ -47,18 +28,19 @@ export default function Page() {
     { id: 'cars', name: 'ავტო', img: '🚗', color: 'from-orange-400 to-red-500' },
     { id: 'realestate', name: 'უძრავი ქონება', img: '🏠', color: 'from-emerald-400 to-teal-600' },
     { id: 'tech', name: 'ტექნიკა', img: '📱', color: 'from-purple-500 to-pink-600' },
-    { id: 'home', name: 'სახლი და ბაღი', img: '🌿', color: 'from-yellow-400 to-orange-500' },
     { id: 'fashion', name: 'ტანსაცმელი', img: '👕', color: 'from-sky-400 to-blue-500' },
-    { id: 'beauty', name: 'მოვლა და პარფიუმი', img: '💄', color: 'from-rose-400 to-fuchsia-500' },
+    { id: 'beauty', name: 'მოვლა', img: '💄', color: 'from-rose-400 to-fuchsia-500' },
   ];
 
-  const CITIES = ['თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი', 'ზუგდიდი'];
+  const CITIES = ['თბილისი', 'ბათუმი', 'ქუთაისი', 'რუსთავი', 'ფოთი', 'გორი'];
+
+  const MARKET_LIMITS = {
+    tech: { max: 15000 }, cars: { max: 500000 }, fashion: { max: 7000 }, beauty: { max: 3000 }
+  };
 
   useEffect(() => {
     setMounted(true);
     fetchProducts();
-    const interval = setInterval(() => setCurrentAd(p => (p + 1) % ADS.length), 5000);
-    return () => clearInterval(interval);
   }, []);
 
   async function fetchProducts() {
@@ -66,47 +48,13 @@ export default function Page() {
     if (data) setProducts(data);
   }
 
-  // --- УЛУЧШЕННЫЙ ИИ ОЦЕНЩИК ---
   const getAiAdvice = () => {
     if (!tempPrice || !tempTitle) return null;
     const price = parseFloat(tempPrice);
-    const title = tempTitle.toLowerCase();
-    
-    // 1. Проверка конкретных моделей
-    let matchedItem = Object.keys(SPECIFIC_ITEMS).find(key => title.includes(key));
-    if (matchedItem) {
-      const refPrice = SPECIFIC_ITEMS[matchedItem];
-      if (price > refPrice * 1.5) return `❌ ფასი ზედმეტად მაღალია! ამ ნივთის საბაზრო ფასი დაახლოებით ${refPrice} ₾-ია.`;
-      if (price < refPrice * 0.4) return `⚠️ ფასი საეჭვოდ დაბალია. დარწმუნდით, რომ ნივთი ორიგინალია.`;
-      return `✅ შესანიშნავი ფასია! ნივთი ბაზრის შესაბამისია.`;
-    }
-
-    // 2. Категориальная проверка (Ловушка на огромные суммы)
     const limit = MARKET_LIMITS[tempCat];
-    if (limit) {
-      if (price > limit.max) return `🚨 შეცდომა? ${limit.label} ამ ფასად თითქმის არასოდეს იყიდება. შეამცირეთ ფასი!`;
-      if (price < limit.min) return `🧐 ძალიან იაფია ${limit.label}-სთვის. შეამოწმეთ ციფრები.`;
-    }
-
-    return "🔍 ფასი ნორმალურ ფარგლებშია.";
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) setPreviewUrl(URL.createObjectURL(file));
-  };
-
-  const handlePublish = async () => {
-    if (!tempTitle || !tempPrice) return alert("შეავსეთ ველები!");
-    const { error } = await supabase.from('products').insert([{ 
-      title: tempTitle, price: parseFloat(tempPrice), category: tempCat,
-      location: tempLocation, image: previewUrl || 'https://via.placeholder.com/400'
-    }]);
-    if (!error) {
-      setIsModalOpen(false);
-      setTempTitle(''); setTempPrice(''); setPreviewUrl(null);
-      fetchProducts();
-    }
+    if (limit && price > limit.max) return "🚨 ფასი ზედმეტად მაღალია ამ კატეგორიისთვის!";
+    if (price < 5) return "⚠️ ფასი ძალიან დაბალია.";
+    return "✅ ფასი ოპტიმალურია!";
   };
 
   if (!mounted) return null;
@@ -115,108 +63,148 @@ export default function Page() {
     <div className={`min-h-screen ${darkMode ? 'bg-[#0f172a] text-white' : 'bg-[#f8fafc] text-slate-900'} transition-all duration-500`}>
       
       {/* Header */}
-      <header className={`p-4 sticky top-0 z-50 border-b ${darkMode ? 'bg-[#1e293b] border-slate-800' : 'bg-white border-slate-200'}`}>
+      <header className={`p-4 sticky top-0 z-50 border-b ${darkMode ? 'bg-[#1e293b]/80 border-slate-800' : 'bg-white/80 border-slate-200'} backdrop-blur-md`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="text-3xl font-black text-blue-600 tracking-tighter">GAVITO</div>
           <div className="flex items-center gap-3">
             <button onClick={() => setDarkMode(!darkMode)} className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800">{darkMode ? '☀️' : '🌙'}</button>
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-6 py-4 rounded-2xl font-black">განცხადება</button>
+            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-[1.5rem] font-black shadow-xl shadow-blue-500/20 active:scale-95 transition-all">გამოქვეყნება</button>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto p-6">
-        
-        {/* Ad Banner */}
-        <div className="relative w-full h-48 sm:h-64 mb-10 overflow-hidden rounded-[3rem] shadow-2xl bg-slate-800">
-          {ADS.map((ad, index) => (
-            <div key={index} className={`absolute inset-0 flex items-center p-12 bg-gradient-to-r ${ad.color} transition-opacity duration-1000 ${index === currentAd ? 'opacity-100 z-10' : 'opacity-0'}`}>
-              <div className="text-6xl mr-8">{ad.img}</div>
-              <div className="text-3xl font-black text-white">{ad.text}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Categories */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-12">
-          {CATEGORIES.map(cat => (
-            <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={`flex flex-col items-center p-5 rounded-[2.5rem] transition-all ${selectedCategory === cat.id ? 'bg-blue-600 text-white scale-105 shadow-xl' : 'bg-white dark:bg-slate-900 border dark:border-slate-800'}`}>
-              <div className={`w-14 h-14 mb-3 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-3xl shadow-md`}>{cat.img}</div>
-              <span className="text-[12px] font-bold tracking-normal">{cat.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Products */}
+        {/* Список товаров (упрощенно) */}
         <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products.filter(p => (selectedCategory === 'all' || p.category === selectedCategory)).map((p) => (
-            <div key={p.id} className="bg-white dark:bg-slate-900 p-5 rounded-[2.8rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all">
-              <div className="relative aspect-square bg-slate-100 dark:bg-slate-800 rounded-[2rem] mb-4 overflow-hidden flex items-center justify-center">
-                {p.image ? <img src={p.image} className="w-full h-full object-cover" alt="" /> : <span className="text-5xl opacity-20">📦</span>}
-              </div>
-              <h3 className="font-bold text-lg px-2">{p.title}</h3>
-              <div className="flex justify-between items-center px-2 mt-4">
-                <span className="text-2xl font-black text-blue-600">{p.price} ₾</span>
-              </div>
+          {products.map((p) => (
+            <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-sm border dark:border-slate-800">
+               <div className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-[2rem] mb-4 overflow-hidden">
+                 <img src={p.image} className="w-full h-full object-cover" alt="" />
+               </div>
+               <h3 className="font-bold px-2 truncate">{p.title}</h3>
+               <p className="text-blue-600 font-black text-xl mt-2 px-2">{p.price} ₾</p>
             </div>
           ))}
         </main>
       </div>
 
-      {/* MODAL С «УМНЫМ» ИИ ОЦЕНЩИКОМ */}
+      {/* MODAL - ПРИЯТНАЯ ПУБЛИКАЦИЯ */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-[3.5rem] p-10 relative ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} shadow-2xl`}>
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-10 right-10 text-xl opacity-50">✕</button>
-            <h2 className="text-3xl font-black mb-8 text-center uppercase tracking-tighter">გამოქვეყნება</h2>
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4 overflow-y-auto">
+          <div className={`w-full max-w-xl rounded-[3.5rem] p-8 sm:p-12 relative ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'} shadow-2xl my-auto`}>
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-2xl opacity-30 hover:opacity-100 transition-opacity">✕</button>
             
-            <div className="space-y-4">
-              {/* Фото */}
-              <label className="flex flex-col items-center justify-center w-full h-32 border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] cursor-pointer hover:border-blue-500 overflow-hidden bg-slate-50 dark:bg-slate-800">
-                {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-xs font-black opacity-50 uppercase">📸 ფოტოს დამატება</span>}
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
-              </label>
-
-              <input type="text" placeholder="რა ნივთს ყიდით? (მაგ: iPhone 16)" className={`w-full p-5 rounded-2xl font-bold outline-none ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempTitle} onChange={(e) => setTempTitle(e.target.value)} />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <select className={`p-5 rounded-2xl font-bold outline-none ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempCat} onChange={(e) => setTempCat(e.target.value)}>
-                  {CATEGORIES.slice(1).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <select className={`p-5 rounded-2xl font-bold outline-none ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} value={tempLocation} onChange={(e) => setTempLocation(e.target.value)}>
-                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            <h2 className="text-4xl font-black mb-8 text-center tracking-tighter uppercase">რა გავყიდოთ?</h2>
+            
+            <div className="space-y-8">
+              {/* Выбор Фото */}
+              <div className="relative group mx-auto w-full max-w-[280px]">
+                <label className="flex flex-col items-center justify-center aspect-square border-4 border-dashed border-slate-200 dark:border-slate-800 rounded-[3rem] cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all overflow-hidden relative">
+                  {previewUrl ? (
+                    <img src={previewUrl} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-5xl mb-2">📸</div>
+                      <p className="text-[10px] font-black uppercase opacity-40">დაამატე ფოტო</p>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setPreviewUrl(URL.createObjectURL(e.target.files[0]))} />
+                </label>
               </div>
 
-              <input 
-                type="number" placeholder="ფასი (₾)" 
-                className={`w-full p-5 rounded-2xl font-bold outline-none ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} 
-                value={tempPrice} 
-                onChange={(e) => {
-                  setTempPrice(e.target.value);
-                  setIsAnalyzing(true);
-                  setTimeout(() => setIsAnalyzing(false), 600);
-                }} 
-              />
+              {/* Название */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase opacity-40 ml-4">სათაური</p>
+                <input 
+                  type="text" placeholder="მაგ: iPhone 16 Pro Max" 
+                  className={`w-full p-6 rounded-[2rem] font-bold outline-none border-2 border-transparent focus:border-blue-500 transition-all ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
+                  value={tempTitle} onChange={(e) => setTempTitle(e.target.value)}
+                />
+              </div>
 
-              {/* ИИ ОЦЕНЩИК (ОТЛАВЛИВАЕТ ОШИБКИ) */}
-              {(tempPrice && tempTitle) && (
-                <div className={`p-5 rounded-[2rem] text-white animate-pulse-short shadow-xl ${getAiAdvice()?.includes('❌') || getAiAdvice()?.includes('🚨') ? 'bg-red-500' : 'bg-indigo-600'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">🤖</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">GAVITO AI ENGINE</span>
-                  </div>
-                  <p className="text-sm font-bold leading-tight">
-                    {isAnalyzing ? "მიმდინარეობს ანალიზი..." : getAiAdvice()}
-                  </p>
+              {/* ПРИЯТНЫЕ ПЛАШКИ КАТЕГОРИЙ */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase opacity-40 ml-4">აირჩიე კატეგორია</p>
+                <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                  {CATEGORIES.slice(1).map(cat => (
+                    <button 
+                      key={cat.id} 
+                      onClick={() => setTempCat(cat.id)}
+                      className={`flex-shrink-0 flex items-center gap-3 px-6 py-4 rounded-full font-bold transition-all border-2 ${
+                        tempCat === cat.id 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105' 
+                        : 'bg-slate-100 dark:bg-slate-800 border-transparent opacity-60'
+                      }`}
+                    >
+                      <span>{cat.img}</span>
+                      <span className="text-sm">{cat.name}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
 
-              <button onClick={handlePublish} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 active:scale-95 transition-all mt-4">განთავსება</button>
+              {/* ПРИЯТНЫЕ ПЛАШКИ ГОРОДОВ */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase opacity-40 ml-4">ლოკაცია</p>
+                <div className="flex flex-wrap gap-2">
+                  {CITIES.map(city => (
+                    <button 
+                      key={city} 
+                      onClick={() => setTempLocation(city)}
+                      className={`px-5 py-3 rounded-2xl text-xs font-black transition-all ${
+                        tempLocation === city 
+                        ? 'bg-emerald-500 text-white shadow-md' 
+                        : 'bg-slate-100 dark:bg-slate-800 opacity-50'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Цена + ИИ */}
+              <div className="space-y-4">
+                <div className="relative">
+                   <p className="text-[10px] font-black uppercase opacity-40 ml-4 mb-2">ფასი</p>
+                   <input 
+                    type="number" placeholder="0.00 ₾" 
+                    className={`w-full p-8 rounded-[2.5rem] text-4xl font-black outline-none border-2 border-transparent focus:border-blue-500 transition-all ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}
+                    value={tempPrice} onChange={(e) => { setTempPrice(e.target.value); setIsAnalyzing(true); setTimeout(()=>setIsAnalyzing(false), 500); }}
+                  />
+                </div>
+
+                {/* AI ПЛАШКА */}
+                {tempPrice && tempTitle && (
+                  <div className={`p-6 rounded-[2.5rem] text-white transition-all duration-500 animate-pulse-slow shadow-xl ${getAiAdvice().includes('🚨') ? 'bg-red-500' : 'bg-gradient-to-br from-indigo-600 to-blue-700'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🤖</span>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">GAVITO AI ინსპექტორი</p>
+                        <p className="text-sm font-bold">{isAnalyzing ? "ანალიზი..." : getAiAdvice()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="w-full bg-blue-600 text-white py-8 rounded-[2.5rem] font-black text-2xl shadow-2xl shadow-blue-500/40 hover:bg-blue-700 active:scale-95 transition-all">
+                გამოქვეყნება
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.01); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+      `}</style>
     </div>
   );
 }
