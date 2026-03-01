@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 
-// 🛑 ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЮ ИЗ CODESPACES (ПОРТ 8080)
+// 🛑 ОБЯЗАТЕЛЬНО ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЮ ИЗ CODESPACES (ПОРТ 8080)
 const JAVA_API_URL = "https://your-java-link-8080.app.github.dev/api/products";
 
 export default function Page() {
@@ -13,7 +13,6 @@ export default function Page() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Поля формы
   const [tempTitle, setTempTitle] = useState('');
   const [tempPrice, setTempPrice] = useState('');
   const [tempCat, setTempCat] = useState('tech');
@@ -29,7 +28,6 @@ export default function Page() {
     { id: 'beauty', name: 'მოვლა', img: '💄' },
   ], []);
 
-  // 1. Загрузка данных при старте
   useEffect(() => {
     setMounted(true);
     fetchProducts();
@@ -42,17 +40,15 @@ export default function Page() {
       const data = await res.json();
       setProducts(data);
     } catch (err) {
-      console.error("Ошибка при получении данных:", err);
+      console.error("Fetch error:", err);
     }
   }
 
-  // 2. Отправка нового товара
   const handlePublish = async () => {
     if (!tempTitle || !tempPrice) {
       alert("შეავსეთ სათაური და ფასი!");
       return;
     }
-
     setIsSubmitting(true);
     try {
       const response = await fetch(JAVA_API_URL, {
@@ -63,20 +59,17 @@ export default function Page() {
           price: parseFloat(tempPrice),
           category: tempCat,
           location: tempLocation,
-          imageUrl: 'https://via.placeholder.com/400' // Временная заглушка для фото
+          imageUrl: 'https://via.placeholder.com/400'
         })
       });
-
       if (response.ok) {
         setIsModalOpen(false);
         setTempTitle('');
         setTempPrice('');
-        await fetchProducts(); // Обновляем список
-      } else {
-        alert("Сервер отклонил запрос");
+        await fetchProducts();
       }
     } catch (error) {
-      alert("Ошибка сети: " + error.message);
+      alert("Ошибка: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -86,15 +79,14 @@ export default function Page() {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-[#0b0f1a] text-white' : 'bg-[#f8fafc] text-slate-900'}`}>
-      {/* Шапка */}
       <header className="p-4 sticky top-0 z-[100] border-b backdrop-blur-xl bg-white/80 dark:bg-[#0b0f1a]/80">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="text-3xl font-black text-blue-600">GAVITO</div>
+          <div className="text-3xl font-black text-blue-600 tracking-tighter">GAVITO</div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setDarkMode(!darkMode)} className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800">
+            <button onClick={() => setDarkMode(!darkMode)} className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xl">
               {darkMode ? '☀️' : '🌙'}
             </button>
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg">
+            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">
               გამოქვეყნება
             </button>
           </div>
@@ -102,18 +94,16 @@ export default function Page() {
       </header>
 
       <div className="max-w-7xl mx-auto p-6">
-        {/* Поиск */}
-        <div className="mb-8">
+        <div className="mb-8 max-w-2xl mx-auto">
           <input 
             type="text" 
             placeholder="ძებნა..." 
-            className="w-full p-4 rounded-2xl border dark:bg-slate-900 outline-none focus:border-blue-500"
+            className="w-full p-4 rounded-2xl border dark:bg-slate-900 outline-none focus:border-blue-600"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        {/* Категории */}
         <div className="flex gap-4 mb-10 overflow-x-auto pb-4 no-scrollbar">
           {CATEGORIES.map(cat => (
             <button 
@@ -126,13 +116,12 @@ export default function Page() {
           ))}
         </div>
 
-        {/* Сетка товаров */}
         <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {products
             .filter(p => (selectedCategory === 'all' || p.category === selectedCategory))
             .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
             .map((p) => (
-              <div key={p.id} className="p-4 rounded-[2.5rem] border bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl transition-all">
+              <div key={p.id} className="p-4 rounded-[2.5rem] border bg-white dark:bg-slate-900 shadow-sm">
                 <img src={p.imageUrl} className="w-full aspect-square object-cover rounded-[2rem] mb-4" alt="" />
                 <h3 className="font-bold text-lg px-2 truncate">{p.title}</h3>
                 <p className="text-2xl font-black text-blue-600 px-2">{p.price} ₾</p>
@@ -142,7 +131,6 @@ export default function Page() {
         </main>
       </div>
 
-      {/* Модалка */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
           <div className={`w-full max-w-lg rounded-[3.5rem] p-8 ${darkMode ? 'bg-[#0f172a]' : 'bg-white'}`}>
@@ -151,20 +139,19 @@ export default function Page() {
               <input 
                 type="text" 
                 placeholder="დასახელება" 
-                className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 outline-none border-2 border-transparent focus:border-blue-500 text-black dark:text-white" 
+                className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 outline-none border-2 border-transparent focus:border-blue-500" 
                 value={tempTitle} 
                 onChange={(e) => setTempTitle(e.target.value)} 
               />
               <input 
                 type="number" 
                 placeholder="ფასი" 
-                className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 outline-none border-2 border-transparent focus:border-blue-500 text-black dark:text-white" 
+                className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 outline-none border-2 border-transparent focus:border-blue-500" 
                 value={tempPrice} 
                 onChange={(e) => setTempPrice(e.target.value)} 
               />
-              
               <select 
-                className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 outline-none text-black dark:text-white" 
+                className="w-full p-5 rounded-2xl bg-slate-100 dark:bg-slate-800 outline-none" 
                 value={tempCat} 
                 onChange={(e) => setTempCat(e.target.value)}
               >
@@ -172,11 +159,10 @@ export default function Page() {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-
               <button 
                 onClick={handlePublish} 
                 disabled={isSubmitting} 
-                className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xl hover:bg-blue-700 active:scale-95 transition-all"
+                className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xl hover:bg-blue-700 transition-all active:scale-95"
               >
                 {isSubmitting ? 'ქვეყნდება...' : 'გამოქვეყნება'}
               </button>
